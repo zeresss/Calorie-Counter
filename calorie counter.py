@@ -16,6 +16,7 @@ class CalorieCounter(QMainWindow):
 
         row = cur.execute('SELECT * FROM user').fetchone()
         self.calorie_norm, self.protein_norm, self.fat_norm, self.carbohydrate_norm = row
+        self.total_calorie, self.total_protein, self.total_fat, self.total_carbohydrate = 0, 0, 0, 0
 
         dates = cur.execute('SELECT date FROM dates').fetchall()
         for i in dates:
@@ -24,7 +25,6 @@ class CalorieCounter(QMainWindow):
             for j in food:
                 self.text.appendPlainText(j[0])
 
-        self.total_calorie, self.total_protein, self.total_fat, self.total_carbohydrate = 0, 0, 0, 0
         with open('./source/list of food.csv', encoding='utf8') as file:
             reader = csv.reader(file, delimiter=',')
             food = cur.execute('SELECT name, amount FROM food')
@@ -36,21 +36,21 @@ class CalorieCounter(QMainWindow):
                         self.total_fat += round(float(j[2]) / 100 * i[1])
                         self.total_carbohydrate += round(float(j[3]) / 100 * i[1])
 
-        days = len(self.con.cursor().execute('SELECT date FROM dates').fetchall())
-        if not days:
-            days = 1
+        dates = len(dates)
+        if not dates:
+            dates = 1
         else:
             self.add_day_btn.setEnabled(True)
             self.add_product_btn.setEnabled(True)
         self.statistics.setText(
-            f'Калории (ккал): Общие - {self.total_calorie}, Рекомендуемые в день - {self.calorie_norm}, '
-            f'Средние в день - {round(self.total_calorie / days)};\n'
-            f'Белки (г): Общие - {self.total_protein}, Рекомендуемые в день - {self.protein_norm}, '
-            f'Средние в день - {round(self.total_protein / days)};\n'
-            f'Жиры (г): Общие - {self.total_fat}, Рекомендуемые в день - {self.fat_norm}, '
-            f'Средние в день - {round(self.total_fat / days)};\n'
-            f'Углеводы (г): Общие - {self.total_carbohydrate}, Рекомендуемые в день - {self.carbohydrate_norm}, '
-            f'Средние в день - {round(self.total_carbohydrate / days)}')
+            f'Калории (ккал): Рекомендуемые в день - {self.calorie_norm}, '
+            f'Средние в день - {round(self.total_calorie / dates)};\n'
+            f'Белки (г): Рекомендуемые в день - {self.protein_norm}, '
+            f'Средние в день - {round(self.total_protein / dates)};\n'
+            f'Жиры (г): Рекомендуемые в день - {self.fat_norm}, '
+            f'Средние в день - {round(self.total_fat / dates)};\n'
+            f'Углеводы (г): Рекомендуемые в день - {self.carbohydrate_norm}, '
+            f'Средние в день - {round(self.total_carbohydrate / dates)}')
 
         self.add_day_btn.clicked.connect(self.add_day)
         self.add_product_btn.clicked.connect(self.add_product)
@@ -62,11 +62,13 @@ class CalorieCounter(QMainWindow):
 
         if dialog.clicked:
             self.text.setPlainText('')
+
             cur = self.con.cursor()
             dates = cur.execute('SELECT date FROM dates').fetchall()
             if dialog.date not in map(lambda x: x[0], dates):
                 cur.execute(f'INSERT INTO dates(date) VALUES("{dialog.date}")')
                 self.con.commit()
+
             dates = cur.execute('SELECT date FROM dates').fetchall()
             for i in dates:
                 self.text.appendPlainText(i[0])
@@ -74,6 +76,7 @@ class CalorieCounter(QMainWindow):
                     f'SELECT name FROM food WHERE date_id = (SELECT id FROM dates WHERE date = "{i[0]}")').fetchall()
                 for j in food:
                     self.text.appendPlainText(j[0])
+
             cur.close()
 
         self.add_product_btn.setEnabled(True)
@@ -84,6 +87,7 @@ class CalorieCounter(QMainWindow):
 
         if dialog.clicked:
             self.text.setPlainText('')
+
             with open('./source/list of food.csv', encoding='utf8') as file:
                 reader = csv.reader(file, delimiter=',')
                 for i in list(reader)[1:]:
@@ -94,11 +98,13 @@ class CalorieCounter(QMainWindow):
                 self.total_protein += round(float(product[1]) / 100 * dialog.amount)
                 self.total_fat += round(float(product[2]) / 100 * dialog.amount)
                 self.total_carbohydrate += round(float(product[3]) / 100 * dialog.amount)
+
             cur = self.con.cursor()
             cur.execute(
                 f'INSERT INTO food(date_id, name, amount) VALUES((SELECT id FROM dates WHERE date = "{dialog.day}"), '
                 f'"{product[0]}", {dialog.amount})')
             self.con.commit()
+
             dates = cur.execute('SELECT date FROM dates').fetchall()
             for i in dates:
                 self.text.appendPlainText(i[0])
@@ -106,16 +112,18 @@ class CalorieCounter(QMainWindow):
                     f'SELECT name FROM food WHERE date_id = (SELECT id FROM dates WHERE date = "{i[0]}")').fetchall()
                 for j in food:
                     self.text.appendPlainText(j[0])
-            days = len(cur.execute('SELECT date FROM dates').fetchall())
+
+            dates = len(dates)
             self.statistics.setText(
-                f'Калории (ккал): Общие - {self.total_calorie}, Рекомендуемые в день - {self.calorie_norm}, '
-                f'Средние в день - {round(self.total_calorie / days)};\n'
-                f'Белки (г): Общие - {self.total_protein}, Рекомендуемые в день - {self.protein_norm}, '
-                f'Средние в день - {round(self.total_protein / days)};\n'
-                f'Жиры (г): Общие - {self.total_fat}, Рекомендуемые в день - {self.fat_norm}, '
-                f'Средние в день - {round(self.total_fat / days)};\n'
-                f'Углеводы (г): Общие - {self.total_carbohydrate}, Рекомендуемые в день - {self.carbohydrate_norm}, '
-                f'Средние в день - {round(self.total_carbohydrate / days)}')
+                f'Калории (ккал): Рекомендуемые в день - {self.calorie_norm}, '
+                f'Средние в день - {round(self.total_calorie / dates)};\n'
+                f'Белки (г): Рекомендуемые в день - {self.protein_norm}, '
+                f'Средние в день - {round(self.total_protein / dates)};\n'
+                f'Жиры (г): Рекомендуемые в день - {self.fat_norm}, '
+                f'Средние в день - {round(self.total_fat / dates)};\n'
+                f'Углеводы (г): Рекомендуемые в день - {self.carbohydrate_norm}, '
+                f'Средние в день - {round(self.total_carbohydrate / dates)}')
+
             cur.close()
 
     def edit_characteristics(self):
