@@ -209,7 +209,7 @@ class DayAddDialog(QDialog):  # диалог добавления дня
     def click(self):
         self.clicked = True  # кнопка "добавить" нажата
         self.date = self.calendar.selectedDate().toString('dd/MM/yyyy')  # дата
-        self.close() # закрытие диалога
+        self.close()  # закрытие диалога
 
 
 class ProductAddDialog(QDialog):  # диалог добавления продукта
